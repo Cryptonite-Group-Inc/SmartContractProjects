@@ -3,14 +3,11 @@
 // Integrate FTP Antibot (included)
 // Integrate DEV fee (see DevFee Contract)
 
-//TOKENOMICS:
-//
-//
-//
-//
-//
-
-
+//TOKENOMICS | 3 Hour Coin Stage System
+// When Selling:
+// 0 to 1 hour: 30% Tax || 2% Liquidity Fee, 12% reflection to holders, 14% Marketing fee, 2% Dev Fee
+// 1 to 2 hours: 20% Tax || 2% Liquidity Fee, 8% reflection to holders, 8% Marketing fee, 2% Dev Fee
+// 2 to 3+ hours: 12% Tax || 2% Liquidity Fee, 8% reflection to holders, 2% Marketing fee, 2% Dev Fee
 
 
 
