@@ -1,0 +1,8 @@
+{
+  "name": "SmartContractProjects",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/mishkatoken/SmartContractProjects.git",
+  "author": "Shi",
+  "license": "MIT"
+}
