@@ -1,0 +1,51 @@
+
+Compiling your contracts...
+===========================
+> Compiling .\contracts\Token.sol
+> Artifacts written to D:\_TechWork\_mishika\SmartContractProjects\build\contracts
+> Compiled successfully using:
+   - solc: 0.6.12+commit.27d51765.Emscripten.clang
+
+
+
+Starting migrations...
+======================
+> Network name:    'bsctestnet'
+> Network id:      97
+> Block gas limit: 30000000 (0x1c9c380)
+
+
+1_initial_migration.js
+======================
+
+   Deploying 'Token'
+   -----------------
+   > transaction hash:    0xcd2f4989bc1a870013771938de57b0ec1ae37fb29d6abf3fd89bbe84d5ed9daa
+   > Blocks: 1            Seconds: 4
+   > contract address:    0xaf5F434584B1ff52ADa49E6403695dE0d5Da59cB
+   > block number:        10621432
+   > block timestamp:     1626377944
+   > account:             0x362C378e0855545C521b62bdEDeff54a8a4C677A
+   > balance:             4.287505651054318966
+   > gas used:            4938234 (0x4b59fa)
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.09876468 ETH
+
+   Pausing for 5 confirmations...
+   ------------------------------
+   > confirmation number: 2 (block: 10621434)
+   > confirmation number: 3 (block: 10621435)
+   > confirmation number: 4 (block: 10621436)
+   > confirmation number: 6 (block: 10621438)
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.09876468 ETH
+
+
+Summary
+=======
+> Total deployments:   1
+> Final cost:          0.09876468 ETH
+
+
