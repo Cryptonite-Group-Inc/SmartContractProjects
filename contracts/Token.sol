@@ -972,6 +972,7 @@ contract Token is Context, IERC20, Ownable {
     }
     
     function _takeLiquidity(uint256 tLiquidity) private {
+        if (tLiquidity == 0) return;
         uint256 currentRate =  _getRate();
         uint256 rLiquidity = tLiquidity.mul(currentRate);
         _rOwned[address(this)] = _rOwned[address(this)].add(rLiquidity);
