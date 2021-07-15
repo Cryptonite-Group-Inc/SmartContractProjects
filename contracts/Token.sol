@@ -731,8 +731,8 @@ contract Token is Context, IERC20, Ownable {
     uint256 public _marketingFee = _marketingFeeRef[0];
     uint256 public _devFee = 2;
 
-    uint256 public _devWallet;
-    uint256 public _marketWallet;
+    address public _devWallet;
+    address public _marketWallet;
 
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
@@ -741,7 +741,6 @@ contract Token is Context, IERC20, Ownable {
     bool public swapAndLiquifyEnabled = true;
     
     uint256 public _maxTxAmount = 5000000 * 10**6 * 10**9;
-    uint256 private numTokensSellToAddToLiquidity = 500000 * 10**6 * 10**9;
     
     uint256 private immutable deployed_at;
 
@@ -1036,16 +1035,6 @@ contract Token is Context, IERC20, Ownable {
         require(amount > 0, "Transfer amount must be greater than zero");
         if(from != owner() && to != owner())
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
-
-        // is the token balance of this contract address over the min number of
-        // tokens that we need to initiate a swap + liquidity lock?
-        // also, don't get caught in a circular liquidity event.
-        // also, don't swap & liquify if sender is uniswap pair.
-        
-        if(contractTokenBalance >= _maxTxAmount)
-        {
-            contractTokenBalance = _maxTxAmount;
-        }
         
         //indicates if fee should be deducted from transfer
         bool takeFee = true;
