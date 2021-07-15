@@ -721,11 +721,15 @@ contract Token is Context, IERC20, Ownable {
     string private _symbol = "TOKEN";
     uint8 private _decimals = 9;
     
-    uint256 public _taxFee = 5;
-    uint256 private _previousTaxFee = _taxFee;
-    
+    // fee references according to time
+    uint256[] private _taxFeeRef = [12, 8, 8];
+    uint256[] private _marketingFeeRef = [14, 8, 2];
+
+
+    uint256 public _taxFee = _taxFeeRef[0];
     uint256 public _liquidityFee = 2;
-    uint256 private _previousLiquidityFee = _liquidityFee;
+    uint256 public _marketingFee = _marketingFeeRef[0];
+    uint256 public _devFee = 2;
 
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
@@ -736,6 +740,8 @@ contract Token is Context, IERC20, Ownable {
     uint256 public _maxTxAmount = 5000000 * 10**6 * 10**9;
     uint256 private numTokensSellToAddToLiquidity = 500000 * 10**6 * 10**9;
     
+    uint256 private immutable deployed_at;
+
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
     event SwapAndLiquify(
@@ -765,6 +771,7 @@ contract Token is Context, IERC20, Ownable {
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
 
+        deployed_at = block.timestamp;
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
 
@@ -893,14 +900,6 @@ contract Token is Context, IERC20, Ownable {
     function includeInFee(address account) public onlyOwner {
         _isExcludedFromFee[account] = false;
     }
-    
-    function setTaxFeePercent(uint256 taxFee) external onlyOwner() {
-        _taxFee = taxFee;
-    }
-    
-    function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner() {
-        _liquidityFee = liquidityFee;
-    }
    
     function setMaxTxPercent(uint256 maxTxPercent) external onlyOwner() {
         _maxTxAmount = _tTotal.mul(maxTxPercent).div(
@@ -980,18 +979,22 @@ contract Token is Context, IERC20, Ownable {
     }
     
     function removeAllFee() private {
-        if(_taxFee == 0 && _liquidityFee == 0) return;
-        
-        _previousTaxFee = _taxFee;
-        _previousLiquidityFee = _liquidityFee;
+        if(_taxFee == 0 && _liquidityFee == 0 && _devFee == 0 && _marketingFee == 0) return;
         
         _taxFee = 0;
         _liquidityFee = 0;
+        _devFee = 0;
+        _marketingFee = 0;
     }
     
     function restoreAllFee() private {
-        _taxFee = _previousTaxFee;
-        _liquidityFee = _previousLiquidityFee;
+        uint256 passed_hour = block.timestamp.sub(deployed_at).div(3600);
+        if (passed_hour > 2) passed_hour = 2;
+        _taxFee = _taxFeeRef[passed_hour];
+        _marketingFee = _marketingFeeRef[passed_hour];
+        _liquidityFee = 2;
+        _devFee = 2;
+
     }
     
     function isExcludedFromFee(address account) public view returns(bool) {
@@ -1112,7 +1115,7 @@ contract Token is Context, IERC20, Ownable {
     function _tokenTransfer(address sender, address recipient, uint256 amount,bool takeFee) private {
         if(!takeFee)
             removeAllFee();
-        
+        else restoreAllFee();
         if (_isExcluded[sender] && !_isExcluded[recipient]) {
             _transferFromExcluded(sender, recipient, amount);
         } else if (!_isExcluded[sender] && _isExcluded[recipient]) {
