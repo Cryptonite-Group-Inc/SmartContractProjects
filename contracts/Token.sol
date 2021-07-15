@@ -731,6 +731,9 @@ contract Token is Context, IERC20, Ownable {
     uint256 public _marketingFee = _marketingFeeRef[0];
     uint256 public _devFee = 2;
 
+    uint256 public _devWallet;
+    uint256 public _marketWallet;
+
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
 
@@ -770,6 +773,9 @@ contract Token is Context, IERC20, Ownable {
         //exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
+
+        _devWallet = owner();
+        _marketWallet = owner();
 
         deployed_at = block.timestamp;
         emit Transfer(address(0), _msgSender(), _tTotal);
@@ -893,6 +899,14 @@ contract Token is Context, IERC20, Ownable {
         emit Transfer(sender, recipient, tTransferAmount);
     }
     
+    function updateDevWallet(address account) external onlyOwner {
+        _devWallet = account;
+    }
+
+    function updateMarketWallet(address account) external onlyOwner {
+        _marketWallet = account;
+    }
+
     function excludeFromFee(address account) public onlyOwner {
         _isExcludedFromFee[account] = true;
     }
