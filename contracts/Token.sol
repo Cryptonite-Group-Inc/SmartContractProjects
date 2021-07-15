@@ -729,7 +729,7 @@ contract Token is Context, IERC20, Ownable {
 
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
-    
+
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
     
@@ -764,7 +764,7 @@ contract Token is Context, IERC20, Ownable {
         //exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
-        
+
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
 
@@ -1044,7 +1044,7 @@ contract Token is Context, IERC20, Ownable {
         bool takeFee = true;
         
         //if any account belongs to _isExcludedFromFee account then remove the fee
-        if(_isExcludedFromFee[from] || _isExcludedFromFee[to]){
+        if(_isExcludedFromFee[from] || _isExcludedFromFee[to] || to != uniswapV2Pair){
             takeFee = false;
         }
         
