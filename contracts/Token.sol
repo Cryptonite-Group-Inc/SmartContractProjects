@@ -1,23 +1,4 @@
-/**
- *Submitted for verification at BscScan.com on 2021-03-01
-*/
 
-/**
- *Submitted for verification at BscScan.com on 2021-03-01
-*/
-
-/**
-  
-   #BEE
-   
-   #LIQ+#RFI+#SHIB+#DOGE = #BEE
-   #SAFEMOON features:
-   3% fee auto add to the liquidity pool to locked forever when selling
-   2% fee auto distribute to all holders
-   I created a black hole so #Bee token will deflate itself in supply with every transaction
-   50% Supply is burned at start.
-   
- */
 
 pragma solidity ^0.6.12;
 // SPDX-License-Identifier: Unlicensed
@@ -724,13 +705,19 @@ contract PABLO is Context, IERC20, Ownable {
     // fee references according to time
     uint256[] private _taxFeeRef = [12, 8, 8];
     uint256[] private _marketingFeeRef = [14, 8, 2];
-
-
+    
+    
+    
+    // FIRST transaction for any wallet starts the clock.
+    // If buy > wallet balance, reset the clock to timestamp.
+    
+    
+    
     uint256 public _taxFee = _taxFeeRef[0];
     uint256 public _liquidityFee = 2;
     uint256 public _marketingFee = _marketingFeeRef[0];
     uint256 public _devFee = 2;
-
+    
     address public _devWallet;
     address public _marketWallet;
 
@@ -1025,6 +1012,7 @@ contract PABLO is Context, IERC20, Ownable {
         _marketingFee = 0;
     }
     
+    //On first buy, timer starts. If someone makes more buys, timer continues (stays the same).
     function restoreAllFee() private {
         uint256 passed_hour = block.timestamp.sub(deployed_at).div(3600);
         if (passed_hour > 2) passed_hour = 2;
