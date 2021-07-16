@@ -17,32 +17,32 @@ Starting migrations...
 
    Replacing 'Token'
    -----------------
-   > transaction hash:    0x8370296b9da124a440a38526d5533cd77d1a946189b01306aefb815ded7329fe
-   > Blocks: 4            Seconds: 10
-   > contract address:    0x45c1625A5041FDce86eb8a94941971DcA039dfb8
-   > block number:        10628633
-   > block timestamp:     1626399557
+   > transaction hash:    0x7ce841f558a84d73adaf65c829ec52a396a5dae79ba09ec555208c69907cbf6f
+   > Blocks: 2            Seconds: 5
+   > contract address:    0x05A3822a4028F503757c9b6CB086b372425EB744
+   > block number:        10629925
+   > block timestamp:     1626403433
    > account:             0x362C378e0855545C521b62bdEDeff54a8a4C677A
-   > balance:             3.789551531054318966
-   > gas used:            4764569 (0x48b399)
+   > balance:             3.560146921054318966
+   > gas used:            5040531 (0x4ce993)
    > gas price:           20 gwei
    > value sent:          0 ETH
-   > total cost:          0.09529138 ETH
+   > total cost:          0.10081062 ETH
 
    Pausing for 5 confirmations...
    ------------------------------
-   > confirmation number: 1 (block: 10628636)
-   > confirmation number: 3 (block: 10628638)
-   > confirmation number: 4 (block: 10628639)
-   > confirmation number: 5 (block: 10628640)
+   > confirmation number: 1 (block: 10629928)
+   > confirmation number: 2 (block: 10629929)
+   > confirmation number: 4 (block: 10629931)
+   > confirmation number: 5 (block: 10629932)
    > Saving artifacts
    -------------------------------------
-   > Total cost:          0.09529138 ETH
+   > Total cost:          0.10081062 ETH
 
 
 Summary
 =======
 > Total deployments:   1
-> Final cost:          0.09529138 ETH
+> Final cost:          0.10081062 ETH
 
 

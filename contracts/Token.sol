@@ -892,8 +892,9 @@ contract Token is Context, IERC20, Ownable {
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);        
-        if (!inSwapAndLiquify) _takeLiquidity(tLiquidity);
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
+        uint256 tExtraFee = calculateExtraFee(tAmount);        
+        if (!inSwapAndLiquify) _takeLiquidity(tLiquidity, tExtraFee);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
@@ -942,7 +943,8 @@ contract Token is Context, IERC20, Ownable {
     function _getTValues(uint256 tAmount) private view returns (uint256, uint256, uint256) {
         uint256 tFee = calculateTaxFee(tAmount);
         uint256 tLiquidity = calculateLiquidityFee(tAmount);
-        uint256 tTransferAmount = tAmount.sub(tFee).sub(tLiquidity);
+        uint256 tExtraFee = calculateExtraFee(tAmount);
+        uint256 tTransferAmount = tAmount.sub(tFee).sub(tLiquidity).sub(tExtraFee);
         return (tTransferAmount, tFee, tLiquidity);
     }
 
@@ -971,7 +973,7 @@ contract Token is Context, IERC20, Ownable {
         return (rSupply, tSupply);
     }
     
-    function _takeLiquidity(uint256 tLiquidity) private lockTheSwap{
+    function _takeLiquidity(uint256 tLiquidity, uint256 tExtraFee) private lockTheSwap{
         if (tLiquidity == 0) return;
         uint256 currentRate =  _getRate();
         uint256 rLiquidity = tLiquidity.mul(currentRate);
@@ -980,7 +982,20 @@ contract Token is Context, IERC20, Ownable {
             _tOwned[address(this)] = _tOwned[address(this)].add(tLiquidity);
         
         uint256 contractTokenBalance = balanceOf(address(this));
-        // swapAndLiquify(contractTokenBalance);
+        swapAndLiquify(contractTokenBalance);
+
+        // handle marketing and dev fee in BNB
+        uint256 rExtraFee = tLiquidity.mul(currentRate);
+        _rOwned[address(this)] = _rOwned[address(this)].add(rExtraFee);
+        if(_isExcluded[address(this)])
+            _tOwned[address(this)] = _tOwned[address(this)].add(tExtraFee);
+        contractTokenBalance = balanceOf(address(this));
+        uint256 oldETHBalance = address(this).balance;
+        swapTokensForEth(contractTokenBalance);
+        uint256 newETHBalance =  address(this).balance.sub(oldETHBalance);
+        uint256 devFee = newETHBalance.mul(_devFee).div(_devFee.add(_marketingFee));
+        payable(_devWallet).transfer(devFee);
+        payable(_marketWallet).transfer(newETHBalance.sub(devFee));
     }
     
     function calculateTaxFee(uint256 _amount) private view returns (uint256) {
@@ -992,6 +1007,12 @@ contract Token is Context, IERC20, Ownable {
     function calculateLiquidityFee(uint256 _amount) private view returns (uint256) {
         return _amount.mul(_liquidityFee).div(
             10**2
+        );
+    }
+
+    function calculateExtraFee(uint256 _amount) private view returns (uint256) {
+        return _amount.mul(_devFee.add(_marketingFee)).div(
+            10 ** 2
         );
     }
     
@@ -1121,13 +1142,16 @@ contract Token is Context, IERC20, Ownable {
         } else {
             _transferStandard(sender, recipient, amount);
         }
+        if(!takeFee)
+            restoreAllFee();
     }
 
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
-        if (!inSwapAndLiquify) _takeLiquidity(tLiquidity);
+        uint256 tExtraFee = calculateExtraFee(tAmount);  
+        if (!inSwapAndLiquify) _takeLiquidity(tLiquidity, tExtraFee);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
@@ -1136,8 +1160,9 @@ contract Token is Context, IERC20, Ownable {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);           
-        if (!inSwapAndLiquify) _takeLiquidity(tLiquidity);
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount); 
+        uint256 tExtraFee = calculateExtraFee(tAmount);            
+        if (!inSwapAndLiquify) _takeLiquidity(tLiquidity, tExtraFee);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
@@ -1147,7 +1172,8 @@ contract Token is Context, IERC20, Ownable {
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);   
-        _takeLiquidity(tLiquidity);
+        uint256 tExtraFee = calculateExtraFee(tAmount);  
+        if (!inSwapAndLiquify) _takeLiquidity(tLiquidity, tExtraFee);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }

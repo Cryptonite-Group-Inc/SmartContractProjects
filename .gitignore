@@ -2,3 +2,4 @@
 .secret
 build
 node_modules
+*.log
