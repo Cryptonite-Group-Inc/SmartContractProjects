@@ -699,7 +699,7 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
 }
 
 
-contract Token is Context, IERC20, Ownable {
+contract PABLO is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
@@ -717,8 +717,8 @@ contract Token is Context, IERC20, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "Token";
-    string private _symbol = "TOKEN";
+    string private _name = "Shiba Escobar";
+    string private _symbol = "PABLO";
     uint8 private _decimals = 9;
     
     // fee references according to time
@@ -761,7 +761,7 @@ contract Token is Context, IERC20, Ownable {
     constructor () public {
         _rOwned[_msgSender()] = _rTotal;
         
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0xD99D1c33F9fC3444f8101754aBC46c52416550D1);
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630b4cf539739df2c5dacb4c659f2488d);
          // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());

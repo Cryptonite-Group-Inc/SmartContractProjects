@@ -1,4 +1,4 @@
-const Token = artifacts.require("Token");
+const Token = artifacts.require("PABLO");
 
 module.exports = async function (deployer) {
   await deployer.deploy(Token);

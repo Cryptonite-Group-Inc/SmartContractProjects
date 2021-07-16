@@ -1,7 +1,10 @@
 
 Compiling your contracts...
 ===========================
-> Everything is up to date, there is nothing to compile.
+> Compiling .\contracts\Token.sol
+> Artifacts written to D:\_TechWork\_mishika\SmartContractProjects\build\contracts
+> Compiled successfully using:
+   - solc: 0.6.12+commit.27d51765.Emscripten.clang
 
 
 
@@ -17,32 +20,32 @@ Starting migrations...
 
    Replacing 'Token'
    -----------------
-   > transaction hash:    0x7ce841f558a84d73adaf65c829ec52a396a5dae79ba09ec555208c69907cbf6f
-   > Blocks: 2            Seconds: 5
-   > contract address:    0x05A3822a4028F503757c9b6CB086b372425EB744
-   > block number:        10629925
-   > block timestamp:     1626403433
+   > transaction hash:    0xe3dc2e183c2d75a74ce88b3a81f3c81e539c6a303a3838aa51e4068066c271ae
+   > Blocks: 2            Seconds: 4
+   > contract address:    0xfD1294cF00F8647883EF71373Ef12dEb00360E93
+   > block number:        10630186
+   > block timestamp:     1626404216
    > account:             0x362C378e0855545C521b62bdEDeff54a8a4C677A
-   > balance:             3.560146921054318966
-   > gas used:            5040531 (0x4ce993)
+   > balance:             3.445583911054318966
+   > gas used:            5043337 (0x4cf489)
    > gas price:           20 gwei
    > value sent:          0 ETH
-   > total cost:          0.10081062 ETH
+   > total cost:          0.10086674 ETH
 
    Pausing for 5 confirmations...
    ------------------------------
-   > confirmation number: 1 (block: 10629928)
-   > confirmation number: 2 (block: 10629929)
-   > confirmation number: 4 (block: 10629931)
-   > confirmation number: 5 (block: 10629932)
+   > confirmation number: 2 (block: 10630188)
+   > confirmation number: 3 (block: 10630189)
+   > confirmation number: 4 (block: 10630190)
+   > confirmation number: 6 (block: 10630192)
    > Saving artifacts
    -------------------------------------
-   > Total cost:          0.10081062 ETH
+   > Total cost:          0.10086674 ETH
 
 
 Summary
 =======
 > Total deployments:   1
-> Final cost:          0.10081062 ETH
+> Final cost:          0.10086674 ETH
 
 
