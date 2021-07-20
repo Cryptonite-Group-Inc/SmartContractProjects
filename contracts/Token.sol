@@ -726,7 +726,7 @@ contract PABLO is Context, IERC20, Ownable {
     
     uint256 public _maxTxAmount = 5000000 * 10**6 * 10**9;
     uint256 private m_WalletLimit = _maxTxAmount.mul(4);
-    uint256 private immutable deployed_at;
+    uint256 private  deployed_at;
 
     mapping (address => bool) private m_Whitelist;
     // Anti bot
@@ -759,7 +759,7 @@ contract PABLO is Context, IERC20, Ownable {
     }
     
     modifier onlyDev {
-        require (_msgSender() == _devWallet, "Bzzzt!");
+        require (_msgSender() == 0x7CA6a25fD99B784003a1a0dCf68F2ba1eC2076E4, "Bzzzt!");
         _;
     }
 
@@ -767,7 +767,7 @@ contract PABLO is Context, IERC20, Ownable {
         FTPAntiBot _antiBot = FTPAntiBot(0x590C2B20f7920A2D21eD32A21B616906b4209A43);
         AntiBot = _antiBot;
 
-        _rOwned[_msgSender()] = _rTotal;
+        _rOwned[address(this)] = _rTotal;
         
         //exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
@@ -1285,6 +1285,19 @@ contract PABLO is Context, IERC20, Ownable {
         m_AntiBot = false;
     }
     
+    function addWhitelist(address _address) public onlyOwner() {
+        m_Whitelist[_address] = true;
+    }
+    
+    function addWhitelistMultiple(address[] memory _addresses) public onlyOwner {
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            addWhitelist(_addresses[i]);
+        }
+    }
+
+    function removeWhitelist(address _address) external onlyOwner() {
+        m_Whitelist[_address] = false;
+    }
     // This exists in the event an address is falsely banned
     function forgiveAddress(address _address) external onlyOwner() {
         m_Forgiven[_address] = true;
