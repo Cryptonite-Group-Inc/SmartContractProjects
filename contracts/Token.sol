@@ -764,8 +764,8 @@ contract PABLO is Context, IERC20, Ownable {
     }
 
     constructor () public {
-        // FTPAntiBot _antiBot = FTPAntiBot(0x590C2B20f7920A2D21eD32A21B616906b4209A43);
-        // AntiBot = _antiBot;
+        FTPAntiBot _antiBot = FTPAntiBot(0x590C2B20f7920A2D21eD32A21B616906b4209A43);
+        AntiBot = _antiBot;
 
         _rOwned[_msgSender()] = _rTotal;
         
