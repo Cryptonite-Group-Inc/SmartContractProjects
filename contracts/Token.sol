@@ -764,8 +764,8 @@ contract PABLO is Context, IERC20, Ownable {
     }
 
     constructor () public {
-        FTPAntiBot _antiBot = FTPAntiBot(0x590C2B20f7920A2D21eD32A21B616906b4209A43);
-        AntiBot = _antiBot;
+        // FTPAntiBot _antiBot = FTPAntiBot(0x590C2B20f7920A2D21eD32A21B616906b4209A43);
+        // AntiBot = _antiBot;
 
         _rOwned[_msgSender()] = _rTotal;
         
@@ -1067,7 +1067,7 @@ contract PABLO is Context, IERC20, Ownable {
         bool takeFee = true;
         
         //if any account belongs to _isExcludedFromFee account then remove the fee
-        if(_isExcludedFromFee[from] || _isExcludedFromFee[to] || !m_Exchange[to] || inSwapAndLiquify){
+        if(!m_PublicTradingOpened || _isExcludedFromFee[from] || _isExcludedFromFee[to] || !m_Exchange[to] || inSwapAndLiquify){
             takeFee = false;
         }
         
