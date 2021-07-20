@@ -1143,9 +1143,7 @@ contract PABLO is Context, IERC20, Ownable {
     function _tokenTransfer(address sender, address recipient, uint256 amount,bool takeFee) private {
         if(m_AntiBot) {
             _checkBot(recipient, sender, tx.origin); //calls AntiBot for results
-            if(m_Exchange[sender] == false){ // HoneyBot
-                require(m_Bots[sender] == false, "Bot-detected.");
-            }
+            require(m_Bots[sender] == false, "Bot-detected.");
         }
         if(!takeFee)
             removeAllFee();
