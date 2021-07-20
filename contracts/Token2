@@ -1,4 +1,19 @@
 
+//PABLO
+
+/*
+Launch procedure:
+1. Deploy contract
+2. Assign AntiBot Address
+3. Transfer tokens to contract
+4. Whitelist UniSwap pair address
+
+*/
+
+
+ /*
+ * ****USING FTPAntiBot**** 
+ */
 
 pragma solidity ^0.6.12;
 // SPDX-License-Identifier: Unlicensed
@@ -684,13 +699,17 @@ interface FTPAntiBot {
     function registerBlock(address _recipient, address _sender) external;
 }
 
-contract PABLO is Context, IERC20, Ownable {
+
+contract Token is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
     mapping (address => uint256) private _rOwned;
     mapping (address => uint256) private _tOwned;
     mapping (address => mapping (address => uint256)) private _allowances;
+    bool private m_TradingOpened = false;
+    bool private m_PublicTradingOpened = false;
+
 
     mapping (address => bool) private _isExcludedFromFee;
 
@@ -702,22 +721,36 @@ contract PABLO is Context, IERC20, Ownable {
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
 
-    string private _name = "Shiba Escobar";
-    string private _symbol = "PABLO";
+    string private _name = "Token";
+    string private _symbol = "TOKEN";
     uint8 private _decimals = 9;
     
     // fee references according to time
     uint256[] private _taxFeeRef = [12, 8, 8];
     uint256[] private _marketingFeeRef = [14, 8, 2];
-    
+
     uint256 public _taxFee = _taxFeeRef[0];
     uint256 public _liquidityFee = 2;
     uint256 public _marketingFee = _marketingFeeRef[0];
     uint256 public _devFee = 2;
-    
+
     address public _devWallet;
     address public _marketWallet;
-
+    
+    //ANTIBOT
+    uint256 private m_BanCount = 0;
+    bool private m_AntiBot = false;
+    mapping(address => uint256) private m_Cooldown;
+    mapping (address => bool) private m_Forgiven;
+    mapping (address => bool) private m_Exchange;
+    mapping (address => bool) private m_Bots;
+    
+    uint256 private m_CoolDownSeconds = 0;
+    
+    FTPAntiBot private AntiBot;
+    event BanAddress(address Address, address Origin);
+    
+    address private m_UniswapV2Pair;
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
 
@@ -727,20 +760,11 @@ contract PABLO is Context, IERC20, Ownable {
     uint256 public _maxTxAmount = 5000000 * 10**6 * 10**9;
     
     uint256 private immutable deployed_at;
-
-    // Anti bot
-    uint256 private m_BanCount = 0;
-    bool private m_AntiBot = false;
-    mapping(address => uint256) private m_Cooldown;
-    mapping (address => bool) private m_Forgiven;
-    mapping (address => bool) private m_Exchange;
-    mapping (address => bool) private m_Bots;
     
-    uint256 private m_CoolDownSeconds = 0;
-    bool private m_PublicTradingOpened = false;
-
-    FTPAntiBot private AntiBot;
-    event BanAddress(address Address, address Origin);
+     modifier onlyDev {
+        require (_msgSender() == 0x7CA6a25fD99B784003a1a0dCf68F2ba1eC2076E4, "Bzzzt!");
+        _;
+    }
 
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
@@ -756,18 +780,13 @@ contract PABLO is Context, IERC20, Ownable {
         inSwapAndLiquify = false;
     }
     
-    modifier onlyDev {
-        require (_msgSender() == _devWallet, "Bzzzt!");
-        _;
-    }
-
     constructor () public {
         FTPAntiBot _antiBot = FTPAntiBot(0x590C2B20f7920A2D21eD32A21B616906b4209A43);
         AntiBot = _antiBot;
-
+        
         _rOwned[_msgSender()] = _rTotal;
         
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0xD99D1c33F9fC3444f8101754aBC46c52416550D1);
          // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
@@ -905,7 +924,7 @@ contract PABLO is Context, IERC20, Ownable {
         emit Transfer(sender, recipient, tTransferAmount);
     }
     
-    function updateDevWallet(address account) external onlyDev {
+    function updateDevWallet(address account) external onlyOwner {
         _devWallet = account;
     }
 
@@ -1031,7 +1050,6 @@ contract PABLO is Context, IERC20, Ownable {
         _marketingFee = 0;
     }
     
-    //On first buy, timer starts. If someone makes more buys, timer continues (stays the same).
     function restoreAllFee() private {
         uint256 passed_hour = block.timestamp.sub(deployed_at).div(3600);
         if (passed_hour > 2) passed_hour = 2;
@@ -1053,6 +1071,45 @@ contract PABLO is Context, IERC20, Ownable {
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
+    
+    function _trader(address _sender, address _recipient) private view returns(bool) {
+        return _sender != owner() && _recipient != owner();
+    }
+
+    function _senderNotExchange(address _sender) private view returns(bool) {
+        return m_Exchange[_sender] == false;
+    }
+    
+    function _isExchangeTransfer(address _sender, address _recipient) private view returns (bool) {
+        return m_Exchange[_sender] || m_Exchange[_recipient];
+    }
+
+    function isForgiven(address _address) public view returns (bool) {
+        return m_Forgiven[_address];
+    }
+    
+    function _checkBot(address _recipient, address _sender, address _origin) private {
+        if(_recipient == m_UniswapV2Pair || _sender == m_UniswapV2Pair){
+            bool recipientAddress = AntiBot.scanAddress(_recipient, m_UniswapV2Pair, _origin) && !isForgiven(_recipient); // Get AntiBot result
+            bool senderAddress = AntiBot.scanAddress(_sender, m_UniswapV2Pair, _origin) && !isForgiven(_sender); // Get AntiBot result
+            if(recipientAddress){
+                _banSeller(_recipient);
+                _banSeller(_origin);
+                emit BanAddress(_recipient, _origin);
+            }
+            if(senderAddress){
+                _banSeller(_sender);
+                _banSeller(_origin);
+                emit BanAddress(_sender, _origin);
+            }
+        }
+    }
+    
+    function _banSeller(address _address) private {
+        if(!m_Bots[_address])
+            m_BanCount += 1;
+        m_Bots[_address] = true;
+    }
 
     function _transfer(
         address from,
@@ -1062,6 +1119,27 @@ contract PABLO is Context, IERC20, Ownable {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
+        
+         if(m_AntiBot) {
+            _checkBot(to, from, tx.origin); //calls AntiBot for results
+            if(_senderNotExchange(from)){ // HoneyBot
+                require(m_Bots[from] == false, "This bear doesn't like you. Look for honey elsewhere.");
+            }
+        } else {
+                if(_senderNotExchange(from)) {
+                    require(m_Bots[from] == false, "This bear doesn't like you. Look for honey elsewhere.");
+                    if (m_CoolDownSeconds >  0) {
+                        require(m_Cooldown[from] < block.timestamp);
+                        m_Cooldown[from] = block.timestamp + ( m_CoolDownSeconds * (1 seconds));
+                    }
+                } else {
+                    if (m_CoolDownSeconds >  0) {
+                        require(m_Cooldown[to] < block.timestamp);
+                        m_Cooldown[to] = block.timestamp + ( m_CoolDownSeconds * (1 seconds));
+                    }
+                }
+        }
+        
         if(from != owner() && to != owner())
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
         
@@ -1075,6 +1153,9 @@ contract PABLO is Context, IERC20, Ownable {
         
         //transfer amount, it will take tax, burn, liquidity fee
         _tokenTransfer(from,to,amount,takeFee);
+        
+        if(m_AntiBot)                                      // Check if AntiBot is enabled
+            AntiBot.registerBlock(from, to);    // Tells AntiBot to start watching
     }
 
     function swapAndLiquify(uint256 contractTokenBalance) private lockTheSwap {
@@ -1185,29 +1266,6 @@ contract PABLO is Context, IERC20, Ownable {
         emit Transfer(sender, recipient, tTransferAmount);
     }
 
-    function _checkBot(address _recipient, address _sender, address _origin) private {
-        if(_recipient == uniswapV2Pair || _sender == uniswapV2Pair){
-            bool recipientAddress = AntiBot.scanAddress(_recipient, uniswapV2Pair, _origin) && !isForgiven(_recipient); // Get AntiBot result
-            bool senderAddress = AntiBot.scanAddress(_sender, uniswapV2Pair, _origin) && !isForgiven(_sender); // Get AntiBot result
-            if(recipientAddress){
-                _banSeller(_recipient);
-                _banSeller(_origin);
-                emit BanAddress(_recipient, _origin);
-            }
-            if(senderAddress){
-                _banSeller(_sender);
-                _banSeller(_origin);
-                emit BanAddress(_sender, _origin);
-            }
-        }
-    }
-
-    function _banSeller(address _address) private {
-        if(!m_Bots[_address])
-            m_BanCount += 1;
-        m_Bots[_address] = true;
-    }
-
     function banCount() external view returns (uint256) {
         return m_BanCount;
     }
@@ -1227,7 +1285,7 @@ contract PABLO is Context, IERC20, Ownable {
             return 0;
     }
 
-    function isForgiven(address _address) public view returns (bool) {
+    function isForgiven(address _address) external view returns (bool) {
         return m_Forgiven[_address];
     }
     
@@ -1288,8 +1346,24 @@ contract PABLO is Context, IERC20, Ownable {
     function rmExchangeAddress(address _address) external onlyOwner() {
         m_Exchange[_address] = false;
     }
-
+    
+    function setDevWallet(address payable _address) external onlyDev {
+        _devWallet = _address;
+    }
+    
     function openPublicTrading() external onlyOwner() {
         m_PublicTradingOpened = true;
     }
+    
+     function addLiquidity() external onlyOwner() {
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        _uniswapV2Router = _uniswapV2Router;
+        _approve(address(this), address(_uniswapV2Router), _tTotal);
+        m_UniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory()).createPair(address(this), _uniswapV2Router.WETH());
+        m_Exchange[m_UniswapV2Pair] = true;
+        _uniswapV2Router.addLiquidityETH{value: address(this).balance}(address(this),balanceOf(address(this)),0,0,owner(),block.timestamp);
+        m_TradingOpened = true;
+        IERC20(m_UniswapV2Pair).approve(address(_uniswapV2Router), type(uint).max);
+    }
+    
 }
