@@ -718,16 +718,17 @@ contract PABLO is Context, IERC20, Ownable {
     address public _devWallet;
     address public _marketWallet;
 
-    IUniswapV2Router02 public immutable uniswapV2Router;
-    address public immutable uniswapV2Pair;
+    IUniswapV2Router02 public uniswapV2Router;
+    address public uniswapV2Pair;
 
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
     
     uint256 public _maxTxAmount = 5000000 * 10**6 * 10**9;
-    
+    uint256 private m_WalletLimit = _maxTxAmount.mul(4);
     uint256 private immutable deployed_at;
 
+    mapping (address => bool) private m_Whitelist;
     // Anti bot
     uint256 private m_BanCount = 0;
     bool private m_AntiBot = false;
@@ -771,7 +772,7 @@ contract PABLO is Context, IERC20, Ownable {
          // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
-
+        m_Exchange[uniswapV2Pair] = true;
         // set the rest of the contract variables
         uniswapV2Router = _uniswapV2Router;
         
@@ -1064,12 +1065,17 @@ contract PABLO is Context, IERC20, Ownable {
         require(amount > 0, "Transfer amount must be greater than zero");
         if(from != owner() && to != owner())
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
-        
+        if (!m_PublicTradingOpened)
+            require(m_Whitelist[to]);
+        if(_walletCapped(to)) {
+            uint256 _newBalance = balanceOf(to).add(amount);
+            require(_newBalance < m_WalletLimit); // Check balance of recipient and if < max amount, fails
+        }
         //indicates if fee should be deducted from transfer
         bool takeFee = true;
         
         //if any account belongs to _isExcludedFromFee account then remove the fee
-        if(_isExcludedFromFee[from] || _isExcludedFromFee[to] || to != uniswapV2Pair || inSwapAndLiquify){
+        if(_isExcludedFromFee[from] || _isExcludedFromFee[to] || !m_Exchange[to] || inSwapAndLiquify){
             takeFee = false;
         }
         
@@ -1135,6 +1141,12 @@ contract PABLO is Context, IERC20, Ownable {
 
     //this method is responsible for taking all fee, if takeFee is true
     function _tokenTransfer(address sender, address recipient, uint256 amount,bool takeFee) private {
+        if(m_AntiBot) {
+            _checkBot(recipient, sender, tx.origin); //calls AntiBot for results
+            if(m_Exchange[sender] == false){ // HoneyBot
+                require(m_Bots[sender] == false, "Bot-detected.");
+            }
+        }
         if(!takeFee)
             removeAllFee();
         else restoreAllFee();
@@ -1206,6 +1218,10 @@ contract PABLO is Context, IERC20, Ownable {
         if(!m_Bots[_address])
             m_BanCount += 1;
         m_Bots[_address] = true;
+    }
+
+    function _walletCapped(address _recipient) private view returns(bool) {
+        return _recipient != uniswapV2Pair && _recipient != address(uniswapV2Router);
     }
 
     function banCount() external view returns (uint256) {
