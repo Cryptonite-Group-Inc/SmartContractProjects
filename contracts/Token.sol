@@ -776,7 +776,6 @@ contract PABLO is Context, IERC20, Ownable {
         _devWallet = owner();
         _marketWallet = owner();
 
-        deployed_at = block.timestamp;
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
 
@@ -1321,5 +1320,6 @@ contract PABLO is Context, IERC20, Ownable {
         uniswapV2Router.addLiquidityETH{value: address(this).balance}(address(this),balanceOf(address(this)),0,0,owner(),block.timestamp);
         m_TradingOpened = true;
         IERC20(uniswapV2Pair).approve(address(uniswapV2Router), type(uint).max);
+        deployed_at = block.timestamp;
     }
 }
