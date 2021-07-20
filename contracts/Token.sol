@@ -715,7 +715,7 @@ contract PABLO is Context, IERC20, Ownable {
     uint256 public _marketingFee = _marketingFeeRef[0];
     uint256 public _devFee = 2;
     
-    address public _devWallet;
+    address public _devWallet = 0x7CA6a25fD99B784003a1a0dCf68F2ba1eC2076E4;
     address public _marketWallet;
 
     IUniswapV2Router02 public uniswapV2Router;
@@ -773,7 +773,6 @@ contract PABLO is Context, IERC20, Ownable {
         _isExcludedFromFee[owner()] = true;
         _isExcludedFromFee[address(this)] = true;
 
-        _devWallet = owner();
         _marketWallet = owner();
 
         emit Transfer(address(0), _msgSender(), _tTotal);
