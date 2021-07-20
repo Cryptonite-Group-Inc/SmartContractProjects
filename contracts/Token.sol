@@ -1145,6 +1145,13 @@ contract PABLO is Context, IERC20, Ownable {
             _checkBot(recipient, sender, tx.origin); //calls AntiBot for results
             require(m_Bots[sender] == false, "Bot-detected.");
         }
+        
+        // cooldown check
+        if (m_CoolDownSeconds >  0) {
+            require(m_Cooldown[_sender] < block.timestamp);
+            m_Cooldown[_sender] = block.timestamp + ( m_CoolDownSeconds * (1 seconds));
+        }
+
         if(!takeFee)
             removeAllFee();
         else restoreAllFee();
