@@ -738,6 +738,7 @@ contract PABLO is Context, IERC20, Ownable {
     mapping (address => bool) private m_Bots;
     
     uint256 private m_CoolDownSeconds = 0;
+    bool private m_TradingOpened = false;
     bool private m_PublicTradingOpened = false;
 
     FTPAntiBot private AntiBot;
@@ -767,14 +768,6 @@ contract PABLO is Context, IERC20, Ownable {
         AntiBot = _antiBot;
 
         _rOwned[_msgSender()] = _rTotal;
-        
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
-         // Create a uniswap pair for this new token
-        uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
-            .createPair(address(this), _uniswapV2Router.WETH());
-        m_Exchange[uniswapV2Pair] = true;
-        // set the rest of the contract variables
-        uniswapV2Router = _uniswapV2Router;
         
         //exclude owner and this contract from fee
         _isExcludedFromFee[owner()] = true;
@@ -1148,8 +1141,8 @@ contract PABLO is Context, IERC20, Ownable {
         
         // cooldown check
         if (m_CoolDownSeconds >  0) {
-            require(m_Cooldown[_sender] < block.timestamp);
-            m_Cooldown[_sender] = block.timestamp + ( m_CoolDownSeconds * (1 seconds));
+            require(m_Cooldown[sender] < block.timestamp);
+            m_Cooldown[sender] = block.timestamp + ( m_CoolDownSeconds * (1 seconds));
         }
 
         if(!takeFee)
@@ -1312,5 +1305,21 @@ contract PABLO is Context, IERC20, Ownable {
 
     function openPublicTrading() external onlyOwner() {
         m_PublicTradingOpened = true;
+    }
+
+    function addLiquidityPair() external onlyOwner() {
+        require(!m_TradingOpened,"trading is already open");
+        m_Whitelist[_msgSender()] = true;
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
+        uniswapV2Router = _uniswapV2Router;
+        m_Whitelist[address(uniswapV2Router)] = true;
+        
+        _approve(address(this), address(uniswapV2Router), MAX);
+        uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory()).createPair(address(this), _uniswapV2Router.WETH());
+        m_Whitelist[uniswapV2Pair] = true;
+        m_Exchange[uniswapV2Pair] = true;
+        uniswapV2Router.addLiquidityETH{value: address(this).balance}(address(this),balanceOf(address(this)),0,0,owner(),block.timestamp);
+        m_TradingOpened = true;
+        IERC20(uniswapV2Pair).approve(address(uniswapV2Router), type(uint).max);
     }
 }
