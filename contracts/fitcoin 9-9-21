@@ -137,9 +137,7 @@ contract FitCoin is Context, IERC20, Ownable {
     uint8 private m_Decimals = 9;
     
     uint256 private m_BanCount = 0;
-    uint256 private m_TxLimit  = 5000000000 * 10**9; // 0.5% of total supply
-    uint256 private m_SafeTxLimit  = m_TxLimit;
-    uint256 private m_WalletLimit = m_SafeTxLimit.mul(4);
+    uint256 private m_WalletLimit = 2500000000 * 10**9; // Max Wallet Size in tokens
     
     uint256 private m_Toll = 625; //6.25% Marketing & Team
     uint256 private m_Dev = 175; // 1.75% Dev
@@ -154,11 +152,9 @@ contract FitCoin is Context, IERC20, Ownable {
     bool private m_PublicTradingOpened = false;
     bool private m_IsSwap = false;
     bool private m_SwapEnabled = false;
+    bool private m_MaxWalletSizeOn = false;
     bool private m_AntiBot = false;
-    bool private m_Intialized = false;
-    uint256 private m_CoolDownSeconds = 0;
     
-    mapping(address => uint256) private m_Cooldown;
     mapping (address => bool) private m_Whitelist;
     mapping (address => bool) private m_Forgiven;
     mapping (address => bool) private m_Exchange;
@@ -170,7 +166,6 @@ contract FitCoin is Context, IERC20, Ownable {
     FTPAntiBot private AntiBot;
     IUniswapV2Router02 private m_UniswapV2Router;
 
-    event MaxOutTxLimit(uint MaxTransaction);
     event BanAddress(address Address, address Origin);
     
     modifier lockTheSwap {
@@ -311,45 +306,28 @@ contract FitCoin is Context, IERC20, Ownable {
         require(_sender != address(0), "ERC20: transfer from the zero address");
         require(_recipient != address(0), "ERC20: transfer to the zero address");
         require(_amount > 0, "Transfer amount must be greater than zero");
-        require(m_Intialized == true, "Make sure all parties agree");
 
         if (!m_PublicTradingOpened)
             require(m_Whitelist[_recipient]);
 
-        if(_walletCapped(_recipient)) {
+        if(m_MaxWalletSizeOn && _walletCapped(_recipient)) {
             uint256 _newBalance = balanceOf(_recipient).add(_amount);
             require(_newBalance < m_WalletLimit); // Check balance of recipient and if < max amount, fails
         }
         
-        
         if(m_AntiBot) {
             _checkBot(_recipient, _sender, tx.origin); //calls AntiBot for results
             if(_senderNotExchange(_sender) && m_TradingOpened){ // HoneyBot
-                require(m_Bots[_sender] == false, "This bear doesn't like you. Look for honey elsewhere.");
+                require(m_Bots[_sender] == false, "We hate bots");
             }
         } else {
-            if (m_TradingOpened) {
-                if(_senderNotExchange(_sender)) {
-                    require(m_Bots[_sender] == false, "This bear doesn't like you. Look for honey elsewhere.");
-                    if (m_CoolDownSeconds >  0) {
-                        require(m_Cooldown[_sender] < block.timestamp);
-                        m_Cooldown[_sender] = block.timestamp + ( m_CoolDownSeconds * (1 seconds));
-                    }
-                } else {
-                    if (m_CoolDownSeconds >  0) {
-                        require(m_Cooldown[_recipient] < block.timestamp);
-                        m_Cooldown[_recipient] = block.timestamp + ( m_CoolDownSeconds * (1 seconds));
-                    }
-                }
+            if(_senderNotExchange(_sender)) { // Sell
+                require(m_Bots[_sender] == false, "We hate bots");
             }
         }
         
-        if (_trader(_sender, _recipient)) {
-            //if (_txSale(_sender, _recipient)) 
-            require(_amount <= m_TxLimit);
-            if (_isExchangeTransfer(_sender, _recipient))  // If trader is buying/selling through an exchange
-                _payToll(_sender);                            // This contract taxes users X% on every tX and converts it to Eth to send to wherever
-        }
+        if (_isExchangeTransfer(_sender, _recipient))  // If trader is buying/selling through an exchange
+            _payToll(_sender);                            // This contract taxes users X% on every tX and converts it to Eth to send to wherever
 
         _handleBalances(_sender, _recipient, _amount);     // Move coins
         
@@ -438,6 +416,13 @@ contract FitCoin is Context, IERC20, Ownable {
         return _banBool;
     }
     
+    function isMaxWalletSizeOn() external view returns (uint256) {                     // Check if Max Wallet Size is turned on
+        if (m_MaxWalletSizeOn == true)
+            return 1;
+        else
+            return 0;
+    }
+    
     function isAntiBot() external view returns (uint256) {                     // Check if Anti Bot is turned on
         if (m_AntiBot == true)
             return 1;
@@ -477,33 +462,22 @@ contract FitCoin is Context, IERC20, Ownable {
         IERC20(m_UniswapV2Pair).approve(address(m_UniswapV2Router), type(uint).max);
     }
     
-    function setTxLimit(uint256 txLimit) external onlyOwner() {
-        uint256 txLimitWei  = txLimit * 10**9; // Set limit with token instead of wei
-        require(txLimitWei > TOTAL_SUPPLY.div(1000)); // Minimum TxLimit is 0.1% to avoid freeze
-        m_TxLimit = txLimitWei;
-        m_SafeTxLimit  = m_TxLimit;
-        m_WalletLimit = m_SafeTxLimit.mul(4);
+    function setWalletLimit(uint256 tokens) external onlyOwner() {
+        uint256 walletLimitWei  = tokens * 10**9; // Set limit with token instead of wei
+        m_WalletLimit = walletLimitWei;
     }
     
     function setTollBasisPoints(uint256 toll) external onlyOwner() {
-        require(toll <= 500); // Max Toll can be set to 5%
         m_Toll = toll;
     }
     
-    function setDevBasisPoints(uint256 dev) external onlyOwner() {
-        require(dev <= 500); // Max Dev can be set to 5%
+    function setDevBasisPoints(uint256 dev) external onlyDev {
         m_Dev = dev;
     }
     
     function setNumOfTokensForDisperse(uint256 tokens) external onlyOwner() {
         uint256 tokensToDisperseWei  = tokens * 10**9; // Set limit with token instead of wei
         _numOfTokensForDisperse = tokensToDisperseWei;
-    }
-    
-    function setTxLimitMax() external onlyOwner() { // MaxTx set to MaxWalletLimit
-        m_TxLimit = m_WalletLimit;
-        m_SafeTxLimit = m_WalletLimit;
-        emit MaxOutTxLimit(m_TxLimit);
     }
     
     function addBot(address _a) public onlyOwner() {
@@ -522,16 +496,16 @@ contract FitCoin is Context, IERC20, Ownable {
         m_BanCount -= 1;
     }
     
-    function setCoolDownSeconds(uint256 coolDownSeconds) external onlyOwner() {
-        m_CoolDownSeconds = coolDownSeconds;
-    }
-    
-    function getCoolDownSeconds() public view returns (uint256) {
-        return m_CoolDownSeconds;
-    }
-    
     function contractBalance() external view onlyOwner() returns (uint256) {                    // Used to verify initial balance for addLiquidity
         return address(this).balance;
+    }
+    
+    function excludeAddressFromFee(address _address) public onlyOwner() {
+        m_ExcludedAddresses[_address] = true;
+    }
+   
+    function includeAddressFromFee(address _address) public onlyOwner() {
+        m_ExcludedAddresses[_address] = false;
     }
     
     function setTollAddress(address payable _tollAddress) external onlyOwner() {
@@ -540,7 +514,6 @@ contract FitCoin is Context, IERC20, Ownable {
     }
     
     function setDevWallet(address payable _address) external onlyDev {
-        m_Intialized = true;
         m_DevAddress = _address;
         m_ExcludedAddresses[_address] = true;
     }
@@ -549,6 +522,14 @@ contract FitCoin is Context, IERC20, Ownable {
     function assignAntiBot(address _address) external onlyOwner() {                             // Set to live net when published. 
         FTPAntiBot _antiBot = FTPAntiBot(_address);                 
         AntiBot = _antiBot;
+    }
+    
+    function setMaxWalletSizeOn() external onlyOwner() {
+        m_MaxWalletSizeOn = true;
+    }
+    
+    function setMaxWalletSizeOff() external onlyOwner() {
+        m_MaxWalletSizeOn = false;
     }
     
     function setAntiBotOn() external onlyOwner() {
