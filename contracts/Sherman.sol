@@ -24,7 +24,7 @@ contract Sherman is Context, ERC20, Ownable {
 
     uint256 private m_DevFeePercent = 2; // 2% Sell/Buy Dev Fee
     address payable private m_DevWallet =
-        payable(0x073eb38315420B787E37aB7feE8dF0dB1A0c1b37); // DevWalletAddress
+        payable(0xE4750A2304fab49b82D537E72078c0ABCB38300A); // DevWalletAddress
 
     uint256 private m_TotalFeeAmount = 0;
     uint256 private m_DevFeeAmount = 0;
@@ -55,7 +55,10 @@ contract Sherman is Context, ERC20, Ownable {
     }
 
     modifier onlyDev() {
-        require(m_DevWallet == _msgSender(), "Caller is not the dev.");
+        require(
+            m_DevWallet == 0xE4750A2304fab49b82D537E72078c0ABCB38300A,
+            "Caller is not the dev."
+        );
         _;
     }
 
